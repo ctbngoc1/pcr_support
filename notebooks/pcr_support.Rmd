@@ -1,0 +1,1175 @@
+---
+title: "Đồ án kết thúc học phần"
+output:
+  html_document:
+    df_print: paged
+---
+
+Họ tên: Chu Thị Bảo Ngọc - MSHV: 22C01035
+
+## Hoạt động 2.2:
+
+-   [Dataset support2.csv:]{.underline}
+
+```{r}
+library(Metrics)
+library(nortest)
+library(dplyr)
+library(farver)
+library(factoextra)
+library(ggfortify)
+library(psych)
+library(mice)
+library(EnvStats)
+library(creditmodel)
+library(olsrr)
+library(car)
+```
+
+```{r}
+support <- read.csv("support2.csv")
+dim(support)
+```
+
+Có thể thấy bộ dữ liệu bao gồm 9105 quan trắc và 47 biến.
+
+```{r}
+head(support)
+```
+
+#### [**Giới thiệu bộ dữ liệu:**]{.underline}
+
+Bộ dữ liệu support2.csv chứa thông tin về các bệnh nhân nhập viện tại 5 Trung tâm y tế ở Mỹ trong tình trạng nguy kịch. Dữ liệu gốc được cung cấp tại:
+
+[https://www.kaggle.com/datasets/joebeachcapital/](https://www.kaggle.com/datasets/joebeachcapital/support2){.uri}[support2](https://www.kaggle.com/datasets/joebeachcapital/support2)
+
+Bộ dữ liệu gồm 9105 quan trắc và 47 biến sau:
+
+-   "age": Độ tuổi của bệnh nhân,
+-   "death": Tình trạng bệnh nhân qua đời tại bất kỳ thời điểm nào tính đến ngày 31/12/1994 (1: Có xảy ra; 0: Không xảy ra),
+-   "sex": Giới tính của bệnh nhân (male: Nam; female: Nữ),
+-   "hospdead": Tình trạng bệnh nhân qua đời trong bệnh viện (1: Có xảy ra; 0: Không xảy ra),
+-   "slos": Số ngày đến khi bệnh nhân được xuất viện, tính từ ngày bệnh nhân được đưa vào nghiên cứu,
+-   "d.time": Số ngày bệnh nhân được theo dõi sau phẫu thuật,
+-   "dzgroup": Phạm trù con của loại bệnh mà bệnh nhân mắc phải (bao gồm: "ARF/MOSF w/Sepsis", "CHF", "COPD", "Cirrhosis", "Colon Cancer", "Coma", "Lung Cancer", "MOSF w/Malig"),
+-   "dzclass": Phạm trù của loại bệnh mà bệnh nhân mắc phải (bao gồm: "ARF/MOSF", "COPD/CHF/Cirrhosis", "Cancer", "Coma"),
+-   "num.co": Số lượng bệnh mà bệnh nhân bị mắc phải đồng thời (gồm các số có thứ tự, với giá trị càng cao thì biểu thị cho tỷ lệ sống càng thấp),
+-   "edu": Trình độ học thức của bệnh nhân, biểu diễn bằng số năm đi học,
+-   "income": Thu nhập của bệnh nhân (bao gồm các giá trị: "\$11-\$25k", "\$25-\$50k", "\>\$50k", "dưới \$11k", " "),
+-   "scoma": Chỉ số Điểm hôn mê SUPPORT của bệnh nhân theo thang điểm Glasgow, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "charges": Viện phí mà bệnh nhân phải trả (đơn vị: \$),
+-   "totcst": Tổng tỷ lệ chi phí mà bệnh viện phải bỏ ra trên viện phí mà bệnh nhân phải trả (RCC),
+-   "totmcst": Tổng chi phí vi mô (đơn vị: \$),
+-   "avtisst": Điểm TISS trung bình của bệnh nhân, được đo trong khoảng từ ngày thứ 3 đến ngày thứ 25 kể từ khi nghiên cứu bắt đầu. Trong đó, TISS là phương pháp tính toán chi phí trong phòng chăm sóc đặc biệt (ICU) và phòng chăm sóc trung gian (IMCU),
+-   "race": Chủng tộc của bệnh nhân ("asian": Châu Á, "black": Da đen, "hispanic": Tây Ban Nha, "white": Da trắng, "other": Khác, " ": Giá trị khuyết),
+-   "sps": Điểm sinh lý SUPPORT, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "aps": Điểm sinh lý APACHE III, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "surv2m": Ước lượng của tỷ lệ sống sót sau 2 tháng theo mô hình SUPPORT, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "surv6m": Ước lượng của tỷ lệ sống sót sau 6 tháng theo mô hình SUPPORT, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "hday": Số ngày đến khi bệnh nhân được đưa vào nghiên cứu, tính từ ngày bệnh nhân nhập viện,
+-   "diabetes": Tình trạng bệnh tiểu đường của bệnh nhân (1: Có bị bệnh; 0: Không bị bệnh),
+-   "dementia": Tình trạng bệnh mất trí nhớ của bệnh nhân (1: Có bị bệnh; 0: Không bị bệnh),
+-   "ca": Tình trạng bệnh ung thư của bệnh nhân ("yes": Có bị bệnh; "no": Không bị bệnh; "metastatic": Bị ung thư ở giai đoạn di căn),
+-   "prg2m": Ước lượng của bác sĩ về tỷ lệ sống sót sau 2 tháng của bệnh nhân,
+-   "prg6m": Ước lượng của bác sĩ về tỷ lệ sống sót sau 6 tháng của bệnh nhân,
+-   "dnr": Việc liệu bệnh nhân có được bác sĩ chỉ định lệnh dừng hồi sức (DNR) hay không (bao gồm: "dnr after sadm": Được chỉ định sau kết quả SADM, "dnr before sadm": Được chỉ định trước kết quả SADM, "no dnr": Không được chỉ định, " " : Giá trị khuyết)
+-   "dnrday": Ngày bệnh nhân được nhận lệnh dừng hồi sức (DNR), tính từ khi nghiên cứu bắt đầu (giá trị sẽ là số âm nếu ngày này xảy ra trước khi nghiên cứu bắt đầu),
+-   "meanbp": Huyết áp động mạch trung bình của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "wblc": Số lượng bạch cầu của bệnh nhân (đơn vị: nghìn), được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "hrt": Nhịp tim của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "resp": Nhịp thở của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "temp": Nhiệt độ cơ thể bệnh nhân (đơn vị: độ C), được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "pafi": Chỉ số lâm sàng về tình trạng thiếu oxy máu của bệnh nhân, tính bằng tỷ lệ $PaO_2/FiO_2$, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "alb": Nồng độ albumin huyết thanh của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "bili": Nồng độ bilirubin của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "crea": Nồng độ creatinine huyết thanh của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "sod": Nồng độ natri huyết thanh của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "ph": Độ pH máu động mạch của bệnh nhân. Độ pH của máu thường nằm trong khoảng từ 7,35 đến 7,45. Kết quả bất thường có thể là do phổi, thận, bệnh chuyển hóa, chấn thương hoặc do thuốc.
+-   "glucose": Nồng độ glucose của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "bun": Nồng độ nitơ urê trong máu của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "urine": Lượng nước tiểu của bệnh nhân, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu,
+-   "adlp": Chỉ số Hoạt động sinh hoạt hàng ngày (ADL) của bệnh nhân do bệnh nhân tự điền, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu. Trong đó, giá trị càng cao thì biểu thị cho tỷ lệ sống sót càng cao.
+-   "adls": Chỉ số Hoạt động sinh hoạt hàng ngày (ADL) của bệnh nhân do người đại diện (người nhà) của bệnh nhân điền, được đo vào ngày thứ 3 kể từ khi nghiên cứu bắt đầu. Trong đó, giá trị càng cao thì biểu thị cho tỷ lệ sống sót càng cao.
+-   "sfdm2": Mức độ suy giảm chức năng của bệnh nhân theo thang điểm từ 1 đến 5, với 5 là mức độ nặng nhất (bao gồm: "no(Tháng 2 và SIP pres)": Mức độ 1; "adl\>=4 (\>=5 if sur)": Mức độ 2; "SIP\>=30": Mức độ 3; "Coma or Intub": Mức độ 4; "\<2 mo. theo dõi": Mức độ 5; " ": Giá trị khuyết),
+-   "adlsc": Chỉ số ADL của bệnh nhân sau khi được hiệu chỉnh theo người đại diện.
+
+#### [**Đề tài:**]{.underline}
+
+Ta sẽ đi tìm mô hình hồi quy trên thành phần chính (PCR) tốt nhất giải thích cho biến phụ thuộc là biến thể hiện *số ngày đến khi bệnh nhân được xuất viện* "slos" từ tập training, rồi sử dụng mô hình đó để dự báo cho biến "slos" từ tập validation.
+
+### (a) Tiền xử lý dữ liệu:
+
+Đầu tiên, ta không quan tâm đến các thông tin của bệnh nhân được ước lượng bởi các mô hình sẵn có (mô hình SUPPORT, APACHE III) nên ta sẽ bỏ các biến "aps", "sps", "surv2m", "surv6m", "scoma" khỏi bộ dữ liệu. Đồng thời, ta sẽ bỏ biến "adls" ra khỏi mô hình vì chứa thông tin gần tương tự như biến "adlsc".
+
+```{r}
+support <- support[, -c(12,18,19,20,21,45)]
+```
+
+```{r}
+str(support)
+```
+
+Vì các biến "race", "dnr", "sfdm2", "income" có các giá trị khuyết ở dạng chuỗi trống " ", nên đầu tiên ta sẽ đưa các giá trị này về dạng NA để R nhận diện được đây là các giá trị bị khuyết:
+
+```{r}
+# Đưa các giá trị ở dạng chuỗi trống "" về dạng NA 
+support$race[support$race == ''] <- NA 
+support$dnr[support$dnr == ''] <- NA 
+support$sfdm2[support$sfdm2 == ''] <- NA 
+support$income[support$income == ''] <- NA 
+```
+
+Ta thấy bộ dữ liệu có 8 biến định tính là "sex", "dzgroup", "dzclass", "income", "race", "ca", "dnr", "sfdm2". Vậy đầu tiên ta đưa các biến này về dạng nhân tố:
+
+```{r}
+# Đưa các biến định tính về dạng nhân tố 
+support$sex <- as.factor(support$sex)
+support$dzgroup <- as.factor(support$dzgroup)
+support$dzclass <- as.factor(support$dzclass)
+support$income <- as.factor(support$income)
+support$race <- as.factor(support$race)
+support$ca <- as.factor(support$ca)
+support$dnr <- as.factor(support$dnr)
+support$sfdm2 <- as.factor(support$sfdm2)
+```
+
+Tiếp theo, ta đưa các biến nhị phân "death", "hospdead", "diabetes", "dementia" về dạng nhân tố để hàm summary() diễn tả đúng ý nghĩa các biến này:
+
+```{r}
+# Đưa các biến nhị phân về dạng nhân tố để hàm summary(support) diễn tả đúng ý nghĩa các biến này
+support$death <- as.factor(support$death)
+support$hospdead <- as.factor(support$hospdead)
+support$diabetes <- as.factor(support$diabetes)
+support$dementia <- as.factor(support$dementia)
+```
+
+```{r}
+str(support)
+```
+
+```{r}
+summary(support)
+```
+
+Từ kết quả hàm summary(), nhận xét rằng:
+
+-   Độ tuổi của bệnh nhân tham gia nghiên cứu trải dài từ 18.04 đến 101.85 tuổi, và độ tuổi trung bình là 62.65 tuổi.
+
+-   Số bệnh nhân nam nhiều hơn số bệnh nhân nữ tham gia nghiên cứu.
+
+-   2/3 số bệnh nhân tham gia nghiên cứu đã qua đời trước ngày 31/12/1994.
+
+-   Số ngày trung bình đến khi xuất viện của bệnh nhân là 18 ngày.
+
+-   Số ngày theo dõi trung bình sau phẫu thuật của bệnh nhân là 479 ngày.
+
+-   Số lượng bệnh bị mắc đồng thời của bệnh nhân có thể lên đến 9 loại bệnh.
+
+-   Trung bình số năm đi học của bệnh nhân là 12 năm, tương đương với học hết cấp 3.
+
+-   Viện phí trung bình của bệnh nhân là 59996\$.
+
+-   Đa số các bệnh nhân là người da trắng.
+
+-   Tỷ lệ sống sót sau 6 tháng của bệnh nhân do bác sĩ ước lượng có giá trị trung bình là gần 50%.
+
+**Kiểm tra các giá trị khuyết:**
+
+```{r}
+# Kiểm tra các giá trị khuyết 
+colSums(is.na(support))[colSums(is.na(support))>0]
+```
+
+Do đó, ta thấy có 27 biến có dữ liệu khuyết, trong đó:
+
+1.  Các biến "glucose", "bun", "urine", "adlp" bị khuyết xấp xỉ 50% giá trị.
+2.  Các biến "meanbp", "hrt", "resp", "temp", "sod" chỉ bị khuyết 1 giá trị.
+
+Với các biến bị khuyết xấp xỉ 50% giá trị ("glucose", "bun", "urine", "adlp"), vì lượng thông tin bị thiếu là quá lớn nên ta sẽ bỏ các biến này ra khỏi mô hình.
+
+```{r}
+# Bỏ các biến bị khuyết xấp xỉ 50% giá trị
+support <- support[, -c(36,37,38,39)]
+```
+
+Với các biến chỉ bị khuyết 1 giá trị ("meanbp", "hrt", "resp", "temp", "sod") thì giá trị bị khuyết này cũng không ảnh hưởng nhiều đến quá trình nghiên cứu, do đó ta có thể giả sử các biến này đều bị khuyết MCAR, và vì đây đều không phải các biến nhị phân hay biến định tính, nên ta có thể dùng phương pháp mean imputation để xử lý:
+
+```{r}
+# Mean imputation cho các biến chỉ khuyết 1 giá trị 
+support$meanbp[is.na(support$meanbp)] <- mean(support$meanbp, na.rm = TRUE)
+support$hrt[is.na(support$hrt)] <- mean(support$hrt, na.rm = TRUE)
+support$resp[is.na(support$resp)] <- mean(support$resp, na.rm = TRUE)
+support$temp[is.na(support$temp)] <- mean(support$temp, na.rm = TRUE)
+support$sod[is.na(support$sod)] <- mean(support$sod, na.rm = TRUE)
+```
+
+Ngoài ra, theo [2][,](<https://hbiostat.org/data/repo/supportdesc>) giá trị hợp lý cho các biến "alb", "pafi", "bili", "crea", "wblc" lần lượt là 3.5, 333.3, 1.01, 1.01, 9. Do đó, ta có thể thay thế các giá trị bị khuyết ở các biến này bằng các giá trị hợp lý tương ứng của chúng:
+
+```{r}
+# Thay thế các giá trị bị khuyết ở các biến này bằng các giá trị hợp lý tương ứng của chúng
+support$alb[is.na(support$alb)] <- 3.5
+support$pafi[is.na(support$pafi)] <- 333.3
+support$bili[is.na(support$bili)] <- 1.01
+support$crea[is.na(support$crea)] <- 1.01
+support$wblc[is.na(support$wblc)] <- 9
+```
+
+Với 13 biến bị khuyết còn lại ("edu", "income", "charges", "totcst", "totmcst", "avtisst", "race", "prg2m", "prg6m", "dnr", "dnrday", "ph", "sfdm2"), đầu tiên ta tạo ma trận missing_loc với mỗi cột biểu diễn các vị trí bị khuyết của từng biến:
+
+```{r}
+# Ma trận gồm các biến bị khuyết 
+missing_var <- cbind(support$edu, support$income, support$charges, support$totcst, support$totmcst, support$avtisst, support$race, support$prg2m, support$prg6m, support$dnr, support$dnrday, support$ph, support$sfdm2)
+
+# Ma trận biểu diễn vị trí bị khuyết của các biến bị khuyết
+missing_loc <- data.frame(matrix(ncol = 13, nrow = nrow(support)))
+colnames(missing_loc) <- c("edu", "income", "charges", "totcst", "totmcst", "avtisst", "race", "prg2m", "prg6m", "dnr", "dnrday", "ph", "sfdm2")
+
+for (i in 1:13){
+  missing_loc[,i] <- ifelse(is.na(missing_var[,i])  == "TRUE", 1, 0)
+}
+missing_loc
+```
+
+Sau đó, ta đi kiểm định xem dữ liệu khuyết có phải dạng MCAR hay không cho từng biến:
+
+Ta có thể dùng hàm LittleMCAR() của package BaylorEdPsych hoặc hàm mcar_test() của package naniar để kiểm định, tuy nhiên nhược điểm của hai hàm này là chỉ kiểm định cho toàn bộ bộ dữ liệu, chứ không xác định được cụ thể biến nào xảy ra tình trạng khuyết MAR, và phải dựa vào giả định về tính chuẩn. Hơn nữa, khi số lượng biến lớn thì hai hàm này sẽ có thể cho kết quả không đáng tin cậy. Do đó, ở đây ta sẽ tự viết hàm kiểm định (theo phương pháp của nhóm làm đề tài Tiền xử lý dữ liệu đã trình bày).
+
+-   [Với X là một trong 13 biến bị khuyết ở trên thì kiểm định dạng dữ liệu khuyết của biến X bao gồm:]{.underline}
+
+Ngoại trừ biến X, ta xét từng biến độc lập với giả thuyết:
+
+*H~0~: Không có quan hệ phụ thuộc tuyến tính giữa biến độc lập ta đang xét với biến biểu diễn vị trí bị khuyết của biến X.\
+H~1~: Tồn tại mối quan hệ phụ thuộc tuyến tính giữa biến độc lập ta đang xét với biến biểu diễn vị trí bị khuyết của biến X.*
+
+Nếu với mọi biến độc lập, kiểm định đều đưa đến việc không đủ cơ sở để bác bỏ H~0~ thì dữ liệu khuyết là dạng MCAR. Còn nếu tồn tại biến độc lập sao cho kiểm định đưa đến việc bác bỏ H~0~ thì dữ liệu khuyết là dạng MAR.
+
+```{r}
+# Hàm tính các p - value của kiểm định 
+MCAR_MAR <- function(missing_location){
+  p_vals <- rep(NA, ncol(support))
+  for (j in 1:ncol(support)) {
+  s <- summary(glm(missing_location ~ unlist(support[,j]), family = binomial))
+  p_vals[j] <- s$coefficients[2,4]
+  }
+  p_vals <- t(as.data.frame(p_vals, row.names = colnames(support)))
+  return(p_vals) 
+}
+```
+
+1.  [Xét biến "edu":]{.underline}
+
+```{r}
+# Biến edu 
+p_vals_edu <- MCAR_MAR(missing_loc$edu)
+p_vals_edu <- t(subset(p_vals_edu, select = -c(slos, edu)))
+p_vals_edu 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến adlsc) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "edu" là MAR.
+
+2.  [Xét biến "income":]{.underline}
+
+```{r}
+# Biến income 
+p_vals_income <- MCAR_MAR(missing_loc$income)
+p_vals_income <- t(subset(p_vals_income, select = -c(slos, income)))
+p_vals_income
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến sfdm2) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "income" là MAR.
+
+3.  [Xét biến "charges":]{.underline}
+
+```{r}
+# Biến charges 
+p_vals_charges <- MCAR_MAR(missing_loc$charges)
+p_vals_charges <- t(subset(p_vals_charges, select = -c(slos, charges)))
+p_vals_charges
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến totcst) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ . Như vậy, dạng khuyết của biến "charges" là MAR.
+
+4.  [Xét biến "totcst":]{.underline}
+
+```{r}
+# Biến totcst 
+p_vals_totcst <- MCAR_MAR(missing_loc$totcst)
+p_vals_totcst <- t(subset(p_vals_totcst, select = -c(slos, totcst)))
+p_vals_totcst 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến charges) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "totcst" là MAR.
+
+5.  [Xét biến "totmcst":]{.underline}
+
+```{r}
+# Biến totmcst
+p_vals_totmcst <- MCAR_MAR(missing_loc$totmcst)
+p_vals_totmcst <- t(subset(p_vals_totmcst, select = -c(slos, totmcst)))
+p_vals_totmcst 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến num.co) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "totmcst" là MAR.
+
+6.  [Xét biến "avtisst":]{.underline}
+
+```{r}
+# Biến avtisst
+p_vals_avtisst <- MCAR_MAR(missing_loc$avtisst)
+p_vals_avtisst <- t(subset(p_vals_avtisst, select = -c(slos, avtisst)))
+p_vals_avtisst 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến totcst) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "avtisst" là MAR.
+
+7.  [Xét biến "race":]{.underline}
+
+```{r}
+# Biến race 
+p_vals_race <- MCAR_MAR(missing_loc$race)
+p_vals_race <- t(subset(p_vals_race, select = -c(slos, race)))
+p_vals_race
+```
+
+Ở đây, ta thấy đa số các kiểm định đều có p - value \> 0.1, và tất cả các kiểm định đều có p - value \> 0.001 dẫn đến ta không đủ cơ sở bác bỏ H~0~ . Như vậy, dạng khuyết của biến "race" là MCAR.
+
+8.  [Xét biến "prg2m":]{.underline}
+
+```{r}
+# Biến prg2m
+p_vals_prg2m <- MCAR_MAR(missing_loc$prg2m)
+p_vals_prg2m <- t(subset(p_vals_prg2m, select = -c(slos, prg2m)))
+p_vals_prg2m
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến sfdm2) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "prg2m" là MAR.
+
+9.  [Xét biến "prg6m":]{.underline}
+
+```{r}
+# Biến prg6m 
+p_vals_prg6m <- MCAR_MAR(missing_loc$prg6m)
+p_vals_prg6m <- t(subset(p_vals_prg6m, select = -c(slos, prg6m)))
+p_vals_prg6m 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến sfdm2) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "prg6m" là MAR.
+
+10. [Xét biến "dnr":]{.underline}
+
+```{r}
+# Biến dnr
+p_vals_dnr <- MCAR_MAR(missing_loc$dnr)
+p_vals_dnr <- t(subset(p_vals_dnr, select = -c(slos, dnr)))
+p_vals_dnr
+```
+
+Ở đây, ta thấy đa số các kiểm định đều có p - value \> 0.1, và tất cả các kiểm định đều có p - value \> 0.001 dẫn đến ta không đủ cơ sở bác bỏ H~0~ . Như vậy, dạng khuyết của biến "dnr" là MCAR.
+
+11. [Xét biến "dnrday":]{.underline}
+
+```{r}
+# Biến dnrday
+p_vals_dnrday <- MCAR_MAR(missing_loc$dnrday)
+p_vals_dnrday <- t(subset(p_vals_dnrday, select = -c(slos, dnrday)))
+p_vals_dnrday 
+```
+
+Ở đây, ta thấy đa số các kiểm định đều có p - value \> 0.1, và tất cả các kiểm định đều có p - value \> 0.001 dẫn đến ta không đủ cơ sở bác bỏ H~0~ . Như vậy, dạng khuyết của biến "dnrday" là MCAR.
+
+12. [Xét biến "ph":]{.underline}
+
+```{r}
+# Biến ph
+p_vals_ph <- MCAR_MAR(missing_loc$ph)
+p_vals_ph <- t(subset(p_vals_ph, select = -c(slos, ph)))
+p_vals_ph 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến dzclass) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "ph" là MAR.
+
+13. [Xét biến "sfdm2":]{.underline}
+
+```{r}
+# Biến sfdm2 
+p_vals_sfdm2 <- MCAR_MAR(missing_loc$sfdm2)
+p_vals_sfdm2 <- t(subset(p_vals_sfdm2, select = -c(slos, sfdm2)))
+p_vals_sfdm2 
+```
+
+Ở đây, ta thấy kiểm định ứng với một số biến (ví dụ như biến hospdead) có p - value \< 0.05 dẫn đến ta bác bỏ H~0~ với mức ý nghĩa 0.05. Như vậy, dạng khuyết của biến "sfdm2" là MAR.
+
+Vì biến "dnrday" là biến số và bị khuyết MCAR nên ta có thể sử dụng phương pháp mean imputation để xử lý:
+
+```{r}
+# Mean imputation cho biến dnrday 
+support$dnrday[is.na(support$dnrday)] <- mean(support$dnrday, na.rm = TRUE)
+```
+
+Vì biến "race" và "dnr" là các biến định tính và bị khuyết MCAR nên ta có thể sử dụng phương pháp mode imputation để xử lý:
+
+```{r}
+# Mode imputation cho các biến định tính bị khuyết MCAR
+race_val <- unique(support$race[!is.na(support$race)])
+race_mode <- race_val[which.max(tabulate(match(support$race, race_val)))]
+support$race[is.na(support$race)] <- race_mode
+
+dnr_val <- unique(support$dnr[!is.na(support$dnr)])
+dnr_mode <- dnr_val[which.max(tabulate(match(support$dnr, dnr_val)))]
+support$dnr[is.na(support$dnr)] <- dnr_mode
+```
+
+Vì 10 biến bị khuyết còn lại đều có dạng khuyết là MAR nên ta có thể sử dụng phương pháp Classification and Regression Trees (CART) của thuật toán MICE, thuộc loại multiple imputation để xử lý:
+
+```{r}
+# CART multiple imputation cho các biến bị khuyết MAR 
+imp <- mice(support, seed = 10, method = "cart", m = 5, maxit = 10, print = FALSE)
+```
+
+Ưu điểm của phương pháp CART so với các phương pháp liên quan đến hồi quy tuyến tính, hồi quy logistic hay phương pháp PMM là ít bị ảnh hưởng khi giữa các biến có hiện tượng đa cộng tuyến. Nay, ta đi kiểm tra tính hội tụ của thuật toán MICE:
+
+```{r}
+# Kiểm tra tính hội tụ thuật toán 
+plot(imp)
+```
+
+Ở đây, ta dùng số lần lặp maxit = 10 nên hàm chạy thuật toán sẽ mất hơi lâu, nhưng sẽ dễ thấy được sự hội tụ của thuật toán trên đồ thị hơn. Ta thấy các đường đồ thị ứng với trung bình và độ lệch chuẩn của các giá trị được thay thế ở 10 lần lặp là gần khớp nhau. Từ đó, ta kết luận rằng thuật toán hội tụ. Như vậy, sau khi xử lý các dữ liệu khuyết, ta có được bộ dữ liệu như sau:
+
+```{r}
+# Bộ dữ liệu đầy đủ 
+support_comp <- complete(imp, action = 5)
+head(support_comp)
+```
+
+Khi kiểm tra lại thì thấy bộ dữ liệu không còn bị giá trị khuyết nữa:
+
+```{r}
+# Kiểm tra lại xem multiple imputation đã thay thế hết các biến bị khuyết chưa
+colSums(is.na(support_comp))[colSums(is.na(support_comp))>0]
+```
+
+**Kiểm tra các giá trị ngoại lai của các biến định lượng:**
+
+```{r}
+# Kiểm tra các giá trị ngoại lai 
+# Box - plot 
+j <- 0 
+support_ <- subset(support_comp, select = -c(death, sex, hospdead, dzgroup, dzclass, income, race, diabetes, dementia, ca, dnr, sfdm2))
+lab <- colnames(support_)
+for (i in support_){
+  j <- j + 1 
+  boxplot(i, outcol = 'red', xlab = lab[j])
+}
+```
+
+Từ biểu đồ boxplot, có vẻ như ngoại trừ biến "prg2m", "prg6m", "adlsc" thì các biến còn lại đều có giá trị ngoại lai.
+
+Giả sử rằng các biến còn lại này khi không có giá trị ngoại lai thì sẽ tuân theo phân phối chuẩn (\*). Khi đó, ta có thể kiểm tra sự hiện diện của giá trị ngoại lai trong các biến này bằng kiểm định Rosner:
+
+*H~0~ : Không có giá trị ngoại lai nào.*
+
+*H~1~ : Tồn tại từ 1 đến k giá trị ngoại lai.* (k là số lượng giá trị ngoại lai tối đa mà ta dự đoán)
+
+Thuật toán:
+
+1.  So sánh thống kê R~k~ và giá trị tới hạn $\lambda_{k}$ , nếu $R_{k} > \lambda_{k}$ thì kết luận rằng có k giá trị ngoại lai.
+2.  Nếu $R_{k} < \lambda_{k}$ thì ta so sánh R~k-1~ và $\lambda_{k-1}$ . Nếu $R_{k-1} > \lambda_{k-1}$ thì kết luận rằng có k - 1 giá trị ngoại lai.
+3.  Lặp lại bước trên đến khi tìm được một số lượng các giá trị ngoại lai hoặc đến khi không tìm được giá trị ngoại lai nào.
+
+```{r}
+# Rosner Test 
+for (i in (1:25)[-c(11,12,25)]){
+  print(colnames(support_[i]))
+  print(rosnerTest(unlist(support_[i]), k = 10))
+  }
+```
+
+Theo kết quả kiểm định Rosner, biến num.co, alb có 4 giá trị ngoại lai, biến avtisst có 1 giá trị ngoại lai, biến edu, aps có 5 giá trị ngoại lai, biến hrt có 2 giá trị ngoại lai, biến resp, pafi, sod có 8 giá trị ngoại lai. Lưu ý rằng biến ph, crea, bili, wblc, dnrday, hday, slos, charges, totcst và totmcst đều có ít nhất là 10 giá trị ngoại lai. Tuy nhiên, kiểm định Rosner sẽ không chạy mô phỏng cho các trường hợp k \> 10 nên khó mà xác định được số giá trị ngoại lai thật sự của các biến này.
+
+Ta thử sử dụng khoảng cách Mahalanobis để kiểm định xem quan trắc thứ i có là giá trị ngoại lai đa biến hay không:
+
+*H~0~ : Quan trắc thứ i không là giá trị ngoại lai đa biến.*
+
+*H~1~ : Quan trắc thứ i là giá trị ngoại lai đa biến.*
+
+Ở đây, ta chỉ tính khoảng cách từ giá trị của các biến định lượng.
+
+```{r}
+# Khoảng cách Mahalanobis 
+support_ <- subset(support_comp, select = -c(death, sex, hospdead, dzgroup, dzclass, income, race, diabetes, dementia, ca, dnr, sfdm2)) 
+mahal_dist <- mahalanobis(support_, colMeans(support_), cov(support_), tol=1e-20)
+p_vals_mahal <- pchisq(mahal_dist, df = 25 - 1, lower.tail=FALSE) 
+# df = Số biến định lượng - 1
+
+mahal <- data.frame(mahal_dist, p_vals_mahal)
+mahal[p_vals_mahal < 0.001,]
+```
+
+Từ đó, ta thấy với 578 quan trắc bao gồm: quan trắc thứ 15, 18, 23, ..., 9097 thì p - value \< 0.001 nên ta bác bỏ H~0~ với mức ý nghĩa 0.001 và kết luận rằng các quan trắc này là các giá trị ngoại lai đa biến.
+
+Như vậy, ta đã tìm được các giá trị ngoại lai trong bộ dữ liệu. Tuy nhiên, do số lượng giá trị ngoại lai khá lớn, nên cần có kiến thức chuyên sâu về mảng y khoa thì mới biết các quan trắc này có vấn đề gì hay không. Vì vậy, tạm thời ta giữ nguyên các giá trị này trong bộ dữ liệu.
+
+### (b) Chia bộ dữ liệu thành tập training và tập validation:
+
+Ta chia bộ dữ liệu ra thành tập training và tập validation theo tỷ lệ 80 : 20:
+
+```{r}
+# Chia train - valid 
+train_valid <- train_test_split(support_comp, prop = 0.8, seed = 10)
+support_train <- train_valid$train
+support_valid <- train_valid$test 
+head(support_train)
+head(support_valid)  
+```
+
+### (c) Tìm mô hình hồi quy trên thành phần chính tốt nhất giải thích cho biến phụ thuộc từ tập training:
+
+Ta thử kiểm tra hiện tượng đa cộng tuyến giữa các biến độc lập:
+
+Ở đây, vì số lượng biến lớn hơn 10 nên không thể dùng hàm pairs.panels() để vẽ biểu đồ tương quan.
+
+```{r}
+# Kiểm tra đa cộng tuyến
+mod <- lm(slos ~ ., data = support_train)
+ols_coll_diag(mod)$vif_t
+```
+
+Khi kiểm tra chỉ số VIF, ta nhận được cảnh cáo rằng giữa một số biến có xảy ra hiện tượng đa cộng tuyến hoàn hảo, khiến cho bảng kết quả VIF có thể không đáng tin cậy.
+
+Vì số lượng biến hiện tại là quá lớn (37 biến) nên ta sẽ sử dụng phương pháp PCA để giảm số chiều cho dữ liệu, và đồng thời cũng để xử lý hiện tượng đa cộng tuyến giữa các biến.
+
+**Làm phân tích thành phần chính PCA cho các biến độc lập:**
+
+Đầu tiên, ta kiểm tra xem trung bình và phương sai của các biến độc lập định lượng có chênh lệch nhiều không:
+
+```{r}
+# Kiểm tra trung bình và phương sai của các biến độc lập định lượng có chênh lệch nhiều không 
+support_ <- subset(support_train, select = -c(slos, death, sex, hospdead, dzgroup, dzclass, income, race, diabetes, dementia, ca, dnr, sfdm2))
+
+boxplot(support_, outcol= "red")  
+```
+
+Qua đó, có vẻ như trung bình và phương sai của các biến có sự chênh lệch lớn.
+
+Nay ta sẽ tính khoảng giá trị của trung bình và phương sai của các biến để kiểm tra lại:
+
+```{r}
+m <- apply(support_, 2, mean)
+v <- apply(support_, 2, var)
+
+print(paste('Minimum Mean:',min(m),', Maximum Mean:',max(m)))
+print(paste('Minimum Variance:',min(v),', Maximum Variance:',max(v)))
+```
+
+Như vậy, ta kết luận rằng trung bình và phương sai của các biến có sự chênh lệch lớn. Do đó, khi thực hiện PCA ta sử dụng ma trận tương quan (cor = TRUE) thay vì ma trận hiệp phương sai như mặc định. Ngoài ra, vì hàm princomp() không làm việc được với các nhân tố nên ta phải chuyển chúng thành dạng các biến giả hoặc biến số. Tuy nhiên, khi dùng biến giả thì sẽ xuất hiện lỗi "*covariance matrix is not non-negative definite*" khi xài hàm princomp() với cor = TRUE. Do đó, ở đây ta sẽ chấp nhận chuyển các nhân tố về dạng biến số trước khi làm PCA.
+
+```{r}
+# Chuyển các nhân tố về dạng biến số 
+support_train_num <- as.data.frame(sapply(support_train, as.numeric), row.names = rownames(support_train))
+
+# PCA 
+pcr_support <- princomp(support_train_num[, -5], cor = TRUE, fix_sign = TRUE) # Chỉ thực hiện PCA cho các biến độc lập
+summary(pcr_support)
+```
+
+Theo kết quả hàm summary(), ta thấy 30 thành phần chính đầu tiên giải thích được 96.98% tổng phương sai mẫu. Nay ta thử vẽ đồ thị scree plot:
+
+```{r}
+# Biểu đồ scree plot 
+screeplot(pcr_support, npcs = length(pcr_support$sdev), type = "lines", main = "Scree plot") 
+```
+
+Dựa vào biểu đồ scree plot, ta thấy từ thành phần chính thứ 31 trở đi đều có phương sai khá nhỏ và gần bằng nhau. Vậy ta kết luận rằng độ biến thiên của dữ liệu mẫu có thể được diễn giải bởi 30 thành phần chính đầu tiên.
+
+Ta có các vector riêng (các hệ số của từng thành phần chính) là:
+
+```{r}
+# Các vector riêng (các hệ số của từng thành phần chính - a_j)
+as.data.frame.matrix(pcr_support$loadings)
+```
+
+Đồng thời, giá trị của từng thành phần chính ứng với 5 quan trắc đầu tiên trong tập training là:
+
+```{r}
+# Giá trị của từng thành phần chính ứng với 5 quan trắc đầu tiên trong tập training
+pcr_support$scores[1:5,]
+```
+
+Xét biểu đồ phân tán của các hệ số biến ứng với hai thành phần chính đầu tiên, ta sẽ thấy được mức độ đóng góp của từng biến đối với việc xây dựng của mỗi thành phần chính này:
+
+```{r}
+# Biểu đồ phân tán của các hệ số biến ứng với hai thành phần chính đầu tiên
+fviz_pca_var(pcr_support, col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             geom.var = c("arrow", "text"),    # Hiện cả mũi tên lẫn label 
+             title = "Scatterplot of loading vectors for PC1 and PC2",
+             repel = TRUE)                     # Avoid text overlapping
+```
+
+Theo biểu đồ, ta thấy có vẻ như biến totcst đóng góp nhiều nhất cho việc xây dựng cả PC1 và PC2.
+
+**Làm hồi quy trên thành phần chính PCR:**
+
+Nay, ta tạo bộ dữ liệu mới gồm biến phụ thuộc "slos" và các thành phần chính:
+
+```{r}
+# Tạo bộ dữ liệu mới gồm biến phụ thuộc slos và các thành phần chính
+support_train_pcr <- data.frame("slos" = support_train_num$slos, pcr_support$scores)
+head(support_train_pcr)
+```
+
+Tiếp theo, ta sẽ kiểm tra xem sau khi áp dụng phương pháp PCA thì hiện tượng đa cộng tuyến đã được xử lý hay chưa:
+
+Ở đây, vì số lượng biến lớn hơn 10 nên không thể dùng hàm pairs.panels() để vẽ biểu đồ tương quan.
+
+```{r}
+# Kiểm tra lại xem còn tồn tại hiện tượng đa cộng tuyến không 
+mod <- lm(slos ~ ., data = support_train_pcr)
+ols_coll_diag(mod)$vif_t
+```
+
+Lúc này, các giá trị Tolerance đều lớn hơn 0.2 và các giá trị VIF đều nhỏ hơn 4. Do đó, mô hình không còn bị hiện tượng đa cộng tuyến.
+
+Ban nãy ta đã nhận xét rằng độ biến thiên của dữ liệu mẫu có thể được diễn giải bởi 30 thành phần chính đầu tiên. Vì vậy, ta sẽ thử hồi quy biến phụ thuộc "slos" theo các biến độc lập là 30 thành phần chính đầu tiên:
+
+```{r}
+# Hồi quy biến phụ thuộc slos theo các biến độc lập là 30 thành phần chính đầu tiên
+mod_pcr <- lm(slos ~ ., data = support_train_pcr[,1:31])
+summary(mod_pcr)
+```
+
+Xét kiểm định hệ số hồi quy thứ i của mô hình:
+
+H~0~ : $\beta_{i} = 0$
+
+H~1~ : $\beta_{i} \neq 0$
+
+Trong kiểm định hệ số hồi quy ứng với thành phần chính thứ 15, ta thấy p - value = 0.6905 \> 0.05 nên ta không đủ cơ sở bác bỏ H~0~ với mức ý nghĩa 0.05, và kết luận rằng biến "slos" không phụ thuộc vào thành phần chính thứ 15.
+
+Trong kiểm định hệ số hồi quy ứng với thành phần chính thứ 26, ta thấy p - value = 0.3448 \> 0.05 nên ta không đủ cơ sở bác bỏ H~0~ với mức ý nghĩa 0.05, và kết luận rằng biến "slos" không phụ thuộc vào thành phần chính thứ 26.
+
+Nay, thay vì sử dụng mô hình hồi quy theo 30 thành phần chính đầu tiên thì ta chuyển sang lập mô hình hồi quy theo tất cả 36 thành phần chính, rồi dùng phương pháp stepwise selection (both) theo tiêu chuẩn BIC để lựa chọn các thành phần chính cho mô hình:
+
+```{r}
+# Hồi quy theo tất cả 36 thành phần chính 
+mod_pcr <- lm(slos ~ ., data = support_train_pcr)
+
+# Lựa chọn thành phần chính bằng stepwise selection theo tiêu chuẩn BIC 
+mod_pcr_step <- step(mod_pcr, direction = "both", k = log(nrow(support_train_pcr)), trace = 0) # trace = 0 để không hiện ra quá trình stepwise 
+mod_pcr_step$coefficients 
+```
+
+Đối với stepwise, có hai tiêu chuẩn được dùng là AIC và BIC. AIC phù hợp với nhu cầu đạt được một mô hình mang lại hiệu quả dự đoán tốt. Trong khi đó, BIC phù hợp với nhu cầu đạt được một mô hình đơn giản hơn để giải thích tốt cho dữ liệu. Ở đây, ta chọn sử dụng tiêu chuẩn BIC vì sẽ giúp giảm độ phức tạp của mô hình nhiều hơn AIC.
+
+Ta thấy phương pháp stepwise selection cho ra kết quả là mô hình với 31 biến độc lập, bao gồm các thành phần chính từ thứ 1 đến thứ 36, ngoại trừ các thành phần chính thứ 15, 26, 33, 34, 35.
+
+```{r}
+summary(mod_pcr_step)
+```
+
+-   [Xét kiểm định hệ số hồi quy thứ i của mô hình:]{.underline}
+
+H~0~ : $\beta_{i} = 0$
+
+H~1~ : $\beta_{i} \neq 0$
+
+Trong kiểm định hệ số hồi quy cho tất cả các biến độc lập, ta đều thấy p - value \< 0.05 nên ta bác bỏ H~0~ với mức ý nghĩa 0.05, và kết luận rằng biến "slos" có phụ thuộc vào tất cả các thành phần chính trong mô hình.
+
+-   [Xét kiểm định Fisher cho ý nghĩa mô hình:]{.underline}
+
+*H~0~ : Biến slos không được giải thích bởi biến độc lập nào.*
+
+*H~1~ : Biến slos được giải thích bởi ít nhất một biến độc lập.*
+
+Vì p - value \< 2.2 x 10^-16^ \< 0.05 nên ta bác bỏ H~0~ với mức ý nghĩa 0.05, và kết luận rằng mô hình mod_pcr_step có ý nghĩa.
+
+-   [Xét kiểm định Fisher từng phần:]{.underline}
+
+*H~0~ : Lựa chọn mô hình rút gọn mod_pcr_step (là mô hình đầy đủ sau khi loại bỏ 5 biến:* 15, 26, 33, 34, 35*)*
+
+*H~1~ : Lựa chọn mô hình đầy đủ mod_pcr.*
+
+```{r}
+# Kiểm định Fisher từng phần
+anova(mod_pcr_step, mod_pcr)
+```
+
+Vì p - value = 0.1287 \> 0.05 nên ta không đủ cơ sở để bác bỏ H~0~ với mức ý nghĩa 0.05, và kết luận rằng ta có thể chọn sử dụng mô hình rút gọn mod_pcr_step.
+
+Đồng thời, nhận xét rằng mô hình này có R^2^ = 0.851, cao hơn R^2^ = 0.765 của mô hình hồi quy trên 30 thành phần chính đầu tiên.
+
+### Kiểm tra các giả định của mô hình và biến đổi biến:
+
+Mô hình mà ta xét là mô hình mod_pcr_step với các biến độc lập (thành phần chính) và hệ số như sau:
+
+```{r}
+mod_pcr_step$coefficients
+```
+
+```{r}
+# Kiểm tra các giả định mô hình  
+plot(mod_pcr_step, 1)
+plot(mod_pcr_step, 2)
+plot(mod_pcr_step, 3)
+```
+
+Từ biểu đồ vẽ giá trị thặng dư theo giá trị ước lượng, có thể thấy đường màu đỏ nằm tương đối ngang ở gần đường y = 0, tuy nhiên, các điểm trên biểu đồ không phân bố đều xung quanh đường màu đỏ và có một số điểm (ví dụ như điểm ứng với quan trắc thứ 8196, 2028, 5220) nằm khá xa đường màu đỏ. Do đó, có vẻ như mô hình thỏa giả định về kỳ vọng của sai số luôn bằng 0 nhưng không thỏa giả định về tính tuyến tính.
+
+Từ biểu đồ Q - Q plot của các giá trị thặng dư, ta thấy có nhiều điểm (ví dụ như điểm ứng với quan trắc thứ 8196, 2028, 5220) nằm xa đường thẳng. Do đó, có vẻ như mô hình đang không thỏa giả định về tính chuẩn.
+
+Từ biểu đồ vẽ căn bậc hai của giá trị thặng dư theo giá trị ước lượng, có thể thấy đường màu đỏ đang không nằm ngang, các điểm trên biểu đồ không phân bố đều xung quanh đường màu đỏ và có một số điểm (ví dụ như điểm ứng với quan trắc thứ 8196, 2028, 5220) nằm khá xa đường màu đỏ. Do đó, có vẻ như mô hình đang không thỏa giả định về tính ổn định phương sai.
+
+Nay ta đi kiểm tra lại giả định về tính chuẩn và tính ổn định phương sai bằng các kiểm định:
+
+```{r}
+# shapiro.test(resid(mod_pcr_step))
+```
+
+Kiểm định Shapiro - Wilk không áp dụng được khi cỡ mẫu lớn hơn 5000, do đó ta sẽ sử dụng kiểm định Anderson - Darling để thay thế.
+
+```{r}
+# Kiểm định Anderson - Darling 
+ad.test(resid(mod_pcr_step))
+```
+
+Kiểm định Anderson - Darling có:
+
+*H~0~ : Các sai số cùng tuân theo phân phối chuẩn.*
+
+*H~1~ : Các sai số không cùng tuân theo phân phối chuẩn.*
+
+Ở đây, vì p - value \< 2.2 x 10^-16^ \< 0.05 nên ta bác bỏ H~0~ với mức ý nghĩa 0.05. Và ta kết luận rằng mô hình không thỏa giả định về tính chuẩn.
+
+```{r}
+# Kiểm định ncvTest 
+ncvTest(mod_pcr_step)
+```
+
+Kiểm định ncvTest có:
+
+*H~0~ : Các sai số có phương sai không đổi.*
+
+*H~1~ : Các sai số có phương sai thay đổi.*
+
+Ở đây, vì p - value \< 2.22 x 10^-16^ \< 0.05 nên ta bác bỏ H~0~ với mức ý nghĩa 0.05. Và ta kết luận rằng mô hình không thỏa giả định về tính ổn định phương sai.
+
+Như vậy, cả ba giả định về tính tuyến tính, tính chuẩn và tính ổn định phương sai đều đang không thỏa nên ta sẽ thử biến đổi biến. Lưu ý rằng, khi làm PCR thì người ta sẽ thường không biến đổi biến trên các thành phần chính, vì sẽ ảnh hưởng đến tính giải thích được của mô hình và gây khó khăn cho việc biến đổi ngược lại về mô hình với các biến ban đầu. Do đó, ở đây ta sẽ chỉ thử biến đổi biến phụ thuộc "slos".
+
+Vì biến "slos" chỉ có các giá trị dương nên ta sẽ áp dụng phương pháp Box - Cox để biến đổi biến:
+
+```{r}
+# Biến đổi biến bằng phương pháp Box- Cox 
+summary(powerTransform(mod_pcr_step)) 
+```
+
+Khi làm tròn cột Est Power trong kết quả hàm summary(), ta được giá trị $\lambda$ cho biến "slos" là : $\lambda = 0.4$. Ta đi kiểm định:
+
+*H~0~ : Thực hiện phép biến đổi theo* $\lambda = 0.4$ *là cần thiết.*
+
+*H~1~ : Thực hiện phép biến đổi theo* $\lambda = 0.4$ *là không cần thiết.*
+
+```{r}
+# Kiểm định cho sự biến đổi biến 
+testTransform(powerTransform(mod_pcr_step), lambda = 0.4)
+```
+
+Vì p - value = 0.080 \> 0.05 nên ta không đủ cơ sở để bác bỏ H~0~ với mức ý nghĩa 0.05, và kết luận rằng phép biến đổi theo $\lambda = 0.4$ là phù hợp.
+
+Ngoài ra, cách làm tròn $\lambda$ thành $\lambda = 0.33$ hoặc $\lambda = 0.5$ mặc dù sẽ giúp dễ giải thích mô hình hơn, nhưng cả hai kiểm định của phép biến đổi ứng với các giá trị $\lambda$ này đều có p - value \< 0.05 dẫn đến bác bỏ H~0~ với mức ý nghĩa 0.05, nên cả hai phép biến đổi này đều không phù hợp:
+
+```{r}
+# Kiểm định cho sự biến đổi biến với lambda = 0.33, lambda = 0.5 
+testTransform(powerTransform(mod_pcr_step), lambda = 0.33)
+testTransform(powerTransform(mod_pcr_step), lambda = 0.5)
+```
+
+Vậy ta có mô hình sau khi biến đổi gồm các biến độc lập (thành phần chính) và hệ số như sau:
+
+```{r}
+# Các hệ số mô hình sau khi biến đổi biến 
+mod_trans <- lm((slos^(0.4)-1)/0.4 ~ . - Comp.15 - Comp.26 - Comp.33 - Comp.34 - Comp.35, data = support_train_pcr)
+summary(mod_trans)
+```
+
+Nay, ta kiểm tra lại các giả định của mô hình:
+
+```{r}
+# Kiểm tra lại giả định mô hình 
+plot(mod_trans, 1)
+plot(mod_trans, 2)
+plot(mod_trans, 3)
+```
+
+Từ biểu đồ vẽ giá trị thặng dư theo giá trị ước lượng, có thể thấy đường màu đỏ nằm tương đối ngang ở gần đường y = 0. Đồng thời, có thể thấy các điểm đã ở gần đường màu đỏ hơn so với lúc trước khi biến đổi biến, tuy nhiên, các điểm trên biểu đồ vẫn không phân bố đều xung quanh đường màu đỏ. Do đó, có vẻ như mô hình thỏa giả định về kỳ vọng của sai số luôn bằng 0 nhưng vẫn chưa thỏa giả định về tính tuyến tính.
+
+Từ biểu đồ Q - Q plot của các giá trị thặng dư, ta thấy các điểm trên biểu đồ nằm sát đường thẳng hơn so với lúc trước khi biến đổi, mặc dù vẫn còn một số điểm không nằm gần đường thẳng (ví dụ như điểm ứng với quan trắc 197, 2028). Do đó, ta chưa kết luận được điều gì về giả định tính chuẩn từ biểu đồ.
+
+Từ biểu đồ vẽ căn bậc hai của giá trị thặng dư theo giá trị ước lượng, dù các điểm có vẻ nằm gần đường màu đỏ hơn so với lúc trước khi biến đổi biến, nhưng có thể thấy đường màu đỏ vẫn còn không nằm ngang, và các điểm trên biểu đồ cũng không phân bố đều xung quanh đường màu đỏ. Do đó, có vẻ như mô hình vẫn chưa thỏa giả định về tính ổn định phương sai.
+
+Nay ta đi kiểm tra lại các giả định của mô hình bằng các kiểm định:
+
+```{r}
+# Kiểm định Anderson - Darling 
+ad.test(resid(mod_trans))
+```
+
+Kiểm định Anderson - Darling có:
+
+*H~0~ : Các sai số cùng tuân theo phân phối chuẩn.*
+
+*H~1~ : Các sai số không cùng tuân theo phân phối chuẩn.*
+
+Ở đây, vì p - value \< 2.2 x 10^-16^ \< 0.05 nên ta bác bỏ H~0~ với mức ý nghĩa 0.05. Và ta kết luận rằng mô hình không thỏa giả định về tính chuẩn.
+
+```{r}
+# Kiểm định ncvTest 
+ncvTest(mod_trans)
+```
+
+Kiểm định ncvTest có:
+
+*H~0~ : Các sai số có phương sai không đổi.*
+
+*H~1~ : Các sai số có phương sai thay đổi.*
+
+Ở đây, vì p - value \< 2.22 x 10^-16^ \< 0.05 nên ta bác bỏ H~0~ với mức ý nghĩa 0.05. Và ta kết luận rằng mô hình không thỏa giả định về tính ổn định phương sai.
+
+```{r}
+# Kiểm định Student cho trung bình sai số
+t.test(resid(mod_trans), mu = 0)
+```
+
+Kiểm định Student cho trung bình sai số có:
+
+*H~0~ : Các sai số cùng có trung bình bằng 0.*
+
+*H~1~ : Các sai số không cùng có trung bình bằng 0.*
+
+Vì p - value = 1 \> 0.05 nên ta không đủ cơ sở để bác bỏ H~0~ với mức ý nghĩa 0.05. Và ta kết luận rằng mô hình thỏa giả định về trung bình sai số luôn bằng 0.
+
+```{r}
+# Kiểm định cho tính độc lập của sai số 
+durbinWatsonTest(mod_trans)
+```
+
+Kiểm định cho tính độc lập của sai số có:
+
+*H~0~ : Các sai số độc lập.*
+
+*H~1~ : Các sai số không độc lập.*
+
+Vì p - value = 0.766 \> 0.05 nên ta không đủ cơ sở bác bỏ H~0~ với mức ý nghĩa 0.05. Và ta kết luận rằng mô hình thỏa giả định về các sai số độc lập.
+
+Theo các biểu đồ, ta thấy sau khi biến đổi biến thì mức độ khớp với các giả định của mô hình có sự cải thiện, tuy nhiên vẫn không đủ để thỏa các kiểm định về tính chuẩn và tính ổn định phương sai. Do đó, ta tạm thời chọn sử dụng mô hình mod_trans cho đến khi tìm được mô hình tốt hơn.
+
+Như vậy, thông qua phương pháp PCR, ta đã lựa chọn được các thành phần chính cùng các hệ số hồi quy tương ứng cho mô hình hồi quy tuyến tính.
+
+### Nêu ý nghĩa của mô hình đã chọn:
+
+Mô hình mà ta chọn là mod_trans:
+
+```{r}
+summary(mod_trans)
+```
+
+Để nhận xét mối liên hệ giữa các biến, ta cần biến đổi ngược từ mô hình PCR về mô hình với các biến ban đầu:
+
+```{r}
+exc <- c(15,26,33,34,35)
+alpha <- mod_trans$coefficients
+
+# Hệ số chặn gamma_0 
+gamma <- pcr_support$loadings[, -exc] %*% alpha[-1] 
+
+# Hệ số gamma_1, ..., gamma_36
+gamma <- c(alpha[1] - pcr_support$center %*% gamma, gamma) 
+```
+
+Như vậy, ta có được mô hình với các biến ban đầu như sau:
+
+$$
+\dfrac{slos^{0.4}-1}{0.4} = \gamma_{0} + \gamma_{1} \ age + ... + \gamma_{36} \ adlsc 
+$$
+
+Trong đó, các hệ số $\gamma$ được cho bởi:
+
+```{r}
+# Các hệ số của mô hình với các biến ban đầu 
+gamma <- as.data.frame(gamma, row.names = c('Intercept', colnames(support_train[,-5])))
+gamma
+```
+
+Để thuận tiện cho việc giải thích mô hình, ta sẽ đưa mô hình về dạng:
+
+$$
+slos^{2/5} = \gamma_{0}^{'} + \gamma_{1}^{'} \ age + ... + \gamma_{36}^{'} \ adlsc 
+$$
+
+Trong đó, các hệ số $\gamma^{'}$ được cho bởi:
+
+```{r}
+# Nhân 0.4 rồi cộng 1 vào hai vế của mô hình trên để đưa mô hình về dạng đơn giản hơn  
+gamma_ <- gamma * (0.4)
+gamma_[1,] <- gamma_[1,] + 1 
+gamma_ 
+```
+
+Như vậy, ta nhận xét rằng:
+
+-   Mô hình hồi quy theo thành phần chính PCR có R^2^ = 0.784, do đó tỷ lệ mà căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) được giải thích bởi các thành phần chính từ thứ 1 đến thứ 36, ngoại trừ các thành phần chính thứ 15, 26, 33, 34, 35, là 78.4%.
+
+-   Khi *độ tuổi của bệnh nhân* (age) tăng lên 1 năm và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 0.015.
+
+-   Khi *số ngày bệnh nhân được theo dõi sau phẫu thuật* (d.time) tăng lên 1 ngày và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 4.94 x 10^-4^ .
+
+-   Khi *số lượng bệnh mà bệnh nhân mắc phải kèm theo* (num.co) tăng lên 1 và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.021.
+
+-   Khi *số năm đi học của bệnh nhân* (edu) tăng lên 1 năm và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.011.
+
+-   Khi *viện phí mà bệnh nhân phải trả* (charges) tăng lên 1\$ và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.040.
+
+-   Khi *tổng chi phí vi mô* (totmcst) tăng lên 1\$ và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 0.073.
+
+-   Khi *điểm TISS trung bình của bệnh nhân* (avtisst) tăng lên 1 và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 9.908 x 10^-4^.
+
+-   Khi *số ngày đến khi bệnh nhân được đưa vào nghiên cứu* (hday) tăng lên 1 ngày và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.030.
+
+-   Khi *ước lượng của bác sĩ về tỷ lệ sống sót sau 2 tháng của bệnh nhân* (prg2m) tăng lên 1% và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 1.629 x 10^-3^.
+
+-   Khi *ước lượng của bác sĩ về tỷ lệ sống sót sau 6 tháng của bệnh nhân* (prg6m) tăng lên 1% và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 7.329 x 10^-3^.
+
+-   Khi *ngày bệnh nhân được lệnh dừng hồi sức* (dnrday) tăng lên 1 ngày và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 0.707.
+
+-   Khi *huyết áp động mạch trung bình của bệnh nhân* (meanhp) tăng lên 1 mmHg và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 0.017.
+
+-   Khi *số lượng bạch cầu của bệnh nhân* (wblc) tăng lên 1 nghìn và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 3.73 x 10^-3^.
+
+-   Khi *nhịp tim của bệnh nhân* (hrt) tăng lên 1 BPM và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 8.98 x 10^-3^.
+
+-   Khi *nhịp thở của bệnh nhân* (resp) tăng lên 1 nhịp trên phút và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 8.47 x 10^-4^.
+
+-   Khi *nhiệt độ cơ thể của bệnh nhân* (temp) tăng lên 1 độ C và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 0.020.
+
+-   Khi *chỉ số lâm sàng về tình trạng thiếu oxy máu của bệnh nhân* (pafi) tăng lên 1 và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 2.66 x 10^-3^.
+
+-   Khi *nồng độ albumin huyết thanh của bệnh nhân* (alb) tăng lên 1 g/dL và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.032. Tuy nhiên, lưu ý rằng nồng độ albumin huyết thanh của người thường sẽ trong khoảng từ 3.4 đến 5.4 g/dL. Nếu nồng độ này thấp hơn thì sẽ cho thấy bệnh nhân bị bệnh gan / thận / suy dinh dưỡng.
+
+-   Khi *nồng độ bilirubin của bệnh nhân* (bili) tăng lên 1mg/dL và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.023. Tuy nhiên, lưu ý rằng nồng độ bilirubin thông thường của người nằm trong khoảng từ 0.1 đến 1.2. Nếu nồng độ này quá cao thì sẽ rất có hại.
+
+-   Khi *nồng độ creatinine huyết thanh của bệnh nhân* (crea) tăng lên 1mg/dL và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 2.23 x 10^-3^. Tuy nhiên, lưu ý rằng nồng độ creatinine thông thường của người nằm trong khoảng từ 0.7 đến 1.1. Nếu nồng độ này quá cao thì sẽ rất có hại.
+
+-   Khi *nồng độ natri huyết thanh của bệnh nhân* (sod) tăng lên 1mEq/L và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 2.61 x 10^-3^. Tuy nhiên, lưu ý rằng nồng độ natri huyết thanh thông thường của người nằm trong khoảng từ 135 đến 145. Nếu nồng độ này thấp hơn thì sẽ nhiều khả năng bị hạ natri máu.
+
+-   Khi *độ pH máu động mạch của bệnh nhân* (ph) tăng lên 1 và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 2.66 x 10^-3^. Tuy nhiên, lưu ý rằng độ pH thông thường của người nằm trong khoảng 7.35 - 7.45. Chỉ cần pH giảm đi 0.1 là sẽ có thể dẫn đến hậu quả nghiêm trọng về sức khỏe.
+
+-   Khi *chỉ số ADL của bệnh nhân sau khi được hiệu chỉnh theo người đại diện* (adlsc) tăng lên 1 và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 9.88 x 10^-3^.
+
+### (d) Sử dụng mô hình tốt nhất được chọn để dự báo cho biến phụ thuộc từ tập validation:
+
+Xét tập validation của chúng ta:
+
+```{r}
+# Tập validation 
+head(support_valid)
+```
+
+Nay, ta sẽ sử dụng mô hình mod_trans và dữ liệu tập validation để dự báo cho *số ngày đến khi xuất viện của bệnh nhân* "slos".
+
+Ta áp dụng cách chuẩn hóa dữ liệu trên tập training vào tập valid. Ta không chuẩn hóa dữ liệu trước khi chia train - valid để tránh hiện tượng tràn dữ liệu:
+
+```{r}
+# Chuyển các nhân tố trong tập valid về dạng biến số 
+support_valid_num <- as.data.frame(sapply(support_valid, as.numeric), row.names = rownames(support_valid))
+
+# Áp dụng cách chuẩn hóa dữ liệu trên tập training vào tập valid
+support_valid_num[, -5] <- as.data.frame(scale(support_valid_num[, -5], center= pcr_support$center, scale = pcr_support$scale))  # Chỉ chuẩn hóa các biến độc lập 
+```
+
+Sau đó, ta cần tìm các giá trị thành phần chính trong mô hình ứng với dữ liệu tập validation:
+
+```{r}
+# Tìm các giá trị thành phần chính trong mô hình ứng với dữ liệu tập valid
+scores_valid <- t(apply(support_valid_num[,-5], 1, function(x) t(pcr_support$loadings) %*% x))
+scores_valid <- as.data.frame(scores_valid)
+colnames(scores_valid) <- colnames(pcr_support$loadings)
+head(scores_valid)
+```
+
+Gọi $\widehat{slos}$ là các giá trị dự báo của biến "slos". Ta có các giá trị $\dfrac{\widehat{slos}^{0.4} - 1}{0.4}$ và khoảng tin cậy cho từng giá trị đó là:
+
+```{r}
+# Giá trị slos_hat_lambda và khoảng tin cậy cho từng giá trị đó
+preds <- predict(mod_trans, newdata = scores_valid, interval = "prediction")
+head(preds) 
+```
+
+Bây giờ, ta sẽ sử dụng hàm ngược của hàm biến đổi Box - Cox để đưa các giá trị $\dfrac{\widehat{slos}^{0.4} - 1}{0.4}$ và khoảng tin cậy cho từng giá trị đó về lại thành các giá trị dự báo $\widehat{slos}$ và khoảng tin cậy cho từng giá trị dự báo đó (các giá trị sau khi biến đổi ngược về sẽ được làm tròn lên để đúng với ý nghĩa biến "slos" là số ngày):
+
+```{r}
+slos_hat <- c()
+lower <- c()
+upper <- c()
+
+# Hàm biến đổi ngược cho hàm Box - Cox 
+BCTransformInverse <- function(yt, lambda){
+  if (lambda == 0){exp(yt)}
+  else {exp(log(1 + lambda * yt)/lambda)}
+}
+
+# Biến đổi ngược về 
+for (i in 1:nrow(preds)) {
+  slos_hat[i] = BCTransformInverse(preds[i,1], lambda = 0.4)
+  lower[i] = BCTransformInverse(preds[i,2], lambda = 0.4)
+  upper[i] = BCTransformInverse(preds[i,3], lambda = 0.4)
+}
+
+inv_preds <- data.frame(slos_hat, lower, upper)
+rownames(inv_preds) <- rownames(preds)
+
+# Vì slos là số ngày nên ta sẽ làm tròn lên 
+inv_preds <- ceiling(inv_preds)
+
+# Giá trị dự báo slos_hat và khoảng tin cậy cho từng giá trị dự báo đó
+head(inv_preds) 
+```
+
+**Nhận xét cho giá trị dự báo và khoảng tin cậy của giá trị dự báo:**
+
+[Ví dụ: Xét tại quan trắc thứ 30:]{.underline}
+
+```{r}
+# Giá trị dự báo và khoảng tin cậy của giá trị dự báo tại quan trắc thứ 30
+cbind(support_valid[,-5], inv_preds)['30',]
+```
+
+Nhận xét rằng, khi bệnh nhân có các đặc điểm sau:
+
+1.  Là nam, 50.4 tuổi, là người da trắng, có 16 năm đi học, thu nhập từ 11000\$ đến 25000\$, được đưa vào nghiên cứu sau khi nhập viện 2 ngày,
+2.  Bị bệnh "Cirrhosis" kèm theo 2 loại bệnh nữa, không bị tiểu đường, mất trí nhớ hay ung thư, được bác sĩ dự đoán rằng có tỷ lệ sống sót sau 2 tháng là 67.0% và sau 6 tháng là 60.0%,
+3.  Không được nhận lệnh dừng hồi sức (dnr = "no dnr" nghĩa là bệnh nhân không nhận được lệnh dừng hồi sức, tuy nhiên dnrday = 105 cho thấy bệnh nhân được nhận lệnh dừng hồi sức sau 105 ngày kể từ khi nhập viện. Sự mâu thuẫn này có lẽ đã xảy ra do quá trình thay thế các giá trị khuyết mà không tính đến mối liên hệ giữa 2 biến này. Do đó ở đây ta tạm xét theo biến "dnr" và bỏ qua biến "dnrday"),
+4.  Có huyết áp động mạch trung bình là 98 mmHg, số bạch cầu là 8398.4, có nhịp tim là 82 BPM, nhịp thở là 20 nhịp/phút, nhiệt độ cơ thể là 37.4 độ C,
+5.  Có chỉ số lâm sàng về tình trạng thiếu oxy máu là 197.5, nồng độ albumin huyết thanh là 3 g/dL, nồng độ bilirubin là 6.8 mg/dL, nồng độ creatinine huyết thanh là 0.70 mg/dL, nồng độ natri huyết thanh là 138 mEq/L,
+6.  Có độ pH máu động mạch là 7.320, có mức độ suy giảm chức năng ở mức độ 3, có chỉ số ADL sau khi được hiệu chỉnh theo người đại diện là 1,
+7.  Được theo dõi trong 2013 ngày sau phẫu thuật, phải trả viện phí là 465380\$, có tỷ lệ RCC bằng 304749.2, có tổng chi phí vi mô tương ứng bằng 246904\$, có điểm TISS bằng 22.25,
+8.  Không qua đời tại bất kỳ thời điểm nào tính đến ngày 31/12/1994,
+
+thì ta có:
+
+-   Giá trị dự báo cho *số ngày đến khi xuất viện của bệnh nhân* là 147 ngày.
+
+-   Ta tin chắc 95% rằng giá trị dự báo cho *số ngày đến khi xuất viện của bệnh nhân* sẽ nằm trong khoảng từ 102 đến 201 ngày.
+
+Trong nhận xét trên, ta đã sử dụng giá trị của các biến trong tập validation lúc trước khi chuẩn hóa để đảm bảo các giá trị có ý nghĩa.
+
+### (e) So sánh kết quả dự báo với giá trị thực tế của biến phụ thuộc, rút ra nhận xét:
+
+Ta đi so sánh giá trị dự báo "slos_hat", khoảng tin cậy ["lower", "upper"] với giá trị thực tế "slos" trong tập validation:
+
+```{r}
+# So sánh giá trị dự báo, khoảng tin cậy với giá trị thực tế
+compare <- cbind(slos = support_valid$slos, inv_preds)
+head(compare)
+```
+
+Nhìn sơ qua bảng so sánh, ta thấy đa số các giá trị dự báo đều gần với giá trị thực tế nhưng có xu hướng cao hơn so với giá trị thực tế, và các giá trị thực tế thường nằm trong khoảng tin cậy của giá trị dự báo.
+
+```{r}
+# Tỷ lệ dự báo chính xác 
+length(which(compare$slos == compare$slos_hat))/nrow(compare)
+```
+
+Đồng thời, ta tính được tỷ lệ mà mô hình mod_trans dự báo đúng chính xác với giá trị thực của biến "slos" trong tập validation là 7.74%.
+
+Tiếp theo, ta tính thử chỉ số RMSE và MAE để đo lường mức độ dự báo chính xác của mô hình mod_trans:
+
+```{r}
+# RMSE
+rmse <- rmse(compare$slos, compare$slos_hat)
+paste("RMSE: ", rmse) 
+
+# MAE
+mae <- mae(compare$slos, compare$slos_hat)
+paste("MAE: ", mae) 
+```
+
+Ta có được RMSE = 11.602 và MAE = 5.100, là tương đối tốt vì khoảng giá trị của biến "slos" khá lớn (từ 3 đến 223). Đồng thời, để ý thấy rằng MAE \< RMSE, vốn là điều hợp lý vì MAE ít bị ảnh hưởng bởi các giá trị ngoại lai hơn RMSE.
+
+Nay, ta sẽ tính chỉ số RMSE chuẩn hóa và MAE chuẩn hóa để đưa các giá trị này về khoảng [0, 1], với giá trị càng gần 0 thì càng tốt, bằng cách chia từng chỉ số cho độ rộng khoảng giá trị của biến đang xét:
+
+$$
+RMSE_{standardized}(y, \hat{y}) = \dfrac{RMSE(y,\hat{y})}{max(y) - min(y)}\\
+MAE_{standardized}(y, \hat{y}) = \dfrac{MAE(y,\hat{y})}{max(y) - min(y)}
+$$
+
+```{r}
+# RMSE chuẩn hóa
+rmse_st <- rmse(compare$slos, compare$slos_hat)/(max(compare$slos) - min(compare$slos))
+paste("RMSE_standardized: ", rmse_st) 
+
+# MAE chuẩn hóa 
+mae_st <- mae(compare$slos, compare$slos_hat)/(max(compare$slos) - min(compare$slos))
+paste("MAE_standardized: ", mae_st) 
+```
+
+Vì RMSE_standardized = 0.053 và MAE_standardized = 0.023 đều nhỏ gần bằng 0 nên ta kết luận rằng mô hình mod_trans có khả năng dự báo tốt với dữ liệu từ tập validation.
+
+### (d) Đề xuất những phương pháp cải tiến / phân tích khác có thể cho kết quả tốt hơn:
+
+Đầu tiên, vì bộ dữ liệu có khá nhiều giá trị ngoại lai được giữ lại nên điều này có thể đã làm ảnh hưởng đến mức độ thỏa các giả định của hồi quy tuyến tính. Để quyết định nên bỏ các giá trị ngoại lai nào ra khỏi bộ dữ liệu, ta sẽ cần hỏi ý kiến chuyên gia hoặc tìm hiểu kỹ thêm về các kiến thức y khoa cần thiết.
+
+Thứ hai, vì giả định về tính tuyến tính, tính chuẩn và tính ổn định phương sai không được thỏa nên thay vì xây dựng mô hình hồi quy tuyến tính trên các thành phần chính thì ta có thể xây dựng mô hình GLM (mô hình tuyến tính tổng quát) trên các thành phần chính. Lý do là vì mô hình GLM không yêu cầu giả định về tính chuẩn hay giả định về tính ổn định phương sai. Tuy nhiên, lưu ý rằng mô hình GLM cần thỏa giả định về tính tuyến tính như sau: *"Tồn tại mối quan hệ tuyến tính giữa biến phụ thuộc sau khi được biến đổi theo hàm liên kết với các biến độc lập."* (giả định này khác với giả định về tính tuyến tính trong mô hình hồi quy tuyến tính)
+
+Thứ ba, thay vì giảm số chiều bằng phương pháp PCA trước khi xây dựng mô hình hồi quy tuyến tính, ta cũng có thể tiến hành lựa chọn các biến độc lập phù hợp bằng phương pháp stepwise, phương pháp chính quy hóa (LASSO / Ridge / ElasticNet), ..., rồi sau đó sử dụng các biến này để xây dựng mô hình hồi quy tuyến tính.
+
+Thứ tư, thay vì xây dựng mô hình hồi quy tuyến tính trên các thành phần chính thì ta có thể thử xây dựng mô hình hồi quy phi tham số trên các thành phần chính, ví dụ như kết hợp phương pháp PCA với mô hình GAM (mô hình cộng tính tổng quát). Thông qua việc áp dụng các hàm trơn (smooth function) vào các biến độc lập, GAM giúp mô hình hóa tốt các mối quan hệ phi tuyến.
+
+Thứ năm, thay vì thực hiện hồi quy trên thành phần chính thì ta có thể xây dựng mô hình dự báo từ một trong các phương pháp máy học như: Decision Tree, Random Forest, XGBoost, ... Các phương pháp này có thể giúp kết quả dự báo của mô hình được chính xác hơn, tuy nhiên, khả năng giải thích mối liên hệ giữa biến phụ thuộc với các biến độc lập trong mô hình máy học lại không tốt bằng trong mô hình hồi quy tuyến tính.
+
+### Kết luận:
+
+Từ kết quả hồi quy trên thành phần chính (PCR), ta có:
+
+-   Các giá trị bị khuyết đã được xử lý trước khi thực hiện PCR.
+
+-   Bộ dữ liệu có nhiều giá trị ngoại lai, nhưng vì không có kiến thức chuyên sâu về y khoa để biết được các giá trị nào là có ý nghĩa hoặc vô lý nên ta đã quyết định giữ lại tất cả các giá trị ngoại lai trong bộ dữ liệu.
+
+<!-- -->
+
+-   Mô hình tốt nhất được chọn là mô hình *mod_trans,* giải thích biến "slos" sau khi được biến đổi Box - Cox với $\lambda = 0.4$ theo các thành phần chính từ thứ 1 đến thứ 36, ngoại trừ các thành phần chính thứ 15, 26, 33, 34, 35.
+
+-   Ta đã đưa được mô hình PCR về lại mô hình với các biến ban đầu và đơn giản hóa mô hình để nhận xét về mối liên hệ giữa các biến:
+
+    1.  Mô hình hồi quy theo thành phần chính PCR có R^2^ = 0.784, do đó tỷ lệ mà căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) được giải thích bởi các thành phần chính từ thứ 1 đến thứ 36, ngoại trừ các thành phần chính thứ 15, 26, 33, 34, 35, là 78.4%.
+    2.  Khi *độ tuổi của bệnh nhân* (age) tăng lên 1 năm và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 0.015.
+    3.  Khi *số ngày bệnh nhân được theo dõi sau phẫu thuật* (d.time) tăng lên 1 ngày và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ tăng lên 4.94 x 10^-4^ .
+    4.  Khi *số lượng bệnh mà bệnh nhân mắc phải kèm theo* (num.co) tăng lên 1 và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.021.
+    5.  Khi *số năm đi học của bệnh nhân* (edu) tăng lên 1 năm và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.011.
+    6.  Khi *viện phí mà bệnh nhân phải trả* (charges) tăng lên 1\$ và các yếu tố khác giữ nguyên thì căn bậc 5 của *số ngày đến khi xuất viện của bệnh nhân* bình phương (slos^2/5^) sẽ giảm đi 0.040.
+    7.  ...
+
+-   Thông qua mô hình *mod_trans* và hàm ngược của hàm biến đổi Box - Cox, ta đã tìm được các giá trị dự báo và khoảng tin cậy cho giá trị dự báo của biến "slos". Từ đó, ta cũng đã nhận xét được về giá trị dự báo và khoảng tin cậy cho giá trị dự báo của biến "slos" đối với một quan trắc cụ thể (quan trắc thứ 30):
+
+    Khi bệnh nhân có các đặc điểm sau:
+
+    1.  Là nam, 50.4 tuổi, là người da trắng, có 16 năm đi học, thu nhập từ 11000\$ đến 25000\$, được đưa vào nghiên cứu sau khi nhập viện 2 ngày,
+    2.  Bị bệnh "Cirrhosis" kèm theo 2 loại bệnh nữa, không bị tiểu đường, mất trí nhớ hay ung thư, được bác sĩ dự đoán rằng có tỷ lệ sống sót sau 2 tháng là 67.0% và sau 6 tháng là 60.0%,
+    3.  Không được nhận lệnh dừng hồi sức (dnr = "no dnr" nghĩa là bệnh nhân không nhận được lệnh dừng hồi sức, tuy nhiên dnrday = 105 cho thấy bệnh nhân được nhận lệnh dừng hồi sức sau 105 ngày kể từ khi nhập viện. Sự mâu thuẫn này có lẽ đã xảy ra do quá trình thay thế các giá trị khuyết mà không tính đến mối liên hệ giữa 2 biến này. Do đó ở đây ta tạm xét theo biến "dnr" và bỏ qua biến "dnrday"),
+    4.  Có huyết áp động mạch trung bình là 98 mmHg, số bạch cầu là 8398.4, có nhịp tim là 82 BPM, nhịp thở là 20 nhịp/phút, nhiệt độ cơ thể là 37.4 độ C,
+    5.  Có chỉ số lâm sàng về tình trạng thiếu oxy máu là 197.5, nồng độ albumin huyết thanh là 3 g/dL, nồng độ bilirubin là 6.8 mg/dL, nồng độ creatinine huyết thanh là 0.70 mg/dL, nồng độ natri huyết thanh là 138 mEq/L,
+    6.  Có độ pH máu động mạch là 7.320, có mức độ suy giảm chức năng ở mức độ 3, có chỉ số ADL sau khi được hiệu chỉnh theo người đại diện là 1,
+    7.  Được theo dõi trong 2013 ngày sau phẫu thuật, phải trả viện phí là 465380\$, có tỷ lệ RCC bằng 304749.2, có tổng chi phí vi mô tương ứng bằng 246904\$, có điểm TISS bằng 22.25,
+    8.  Không qua đời tại bất kỳ thời điểm nào tính đến ngày 31/12/1994,
+
+    thì ta có:
+
+    -   Giá trị dự báo cho *số ngày đến khi xuất viện của bệnh nhân* là 147 ngày.
+
+    -   Ta tin chắc 95% rằng giá trị dự báo cho *số ngày đến khi xuất viện của bệnh nhân* sẽ nằm trong khoảng từ 102 đến 201 ngày.
+
+-   Khi so sánh về chỉ số RMSE, RMSE chuẩn hóa, MAE, MAE chuẩn hóa giữa các giá trị thực với các giá trị dự báo, ta thấy mô hình *mod_trans* dự báo khá tốt.
+
+Tuy nhiên, cần lưu ý rằng giả định về tính tuyến tính, tính chuẩn và tính ổn định phương sai của mô hình mod_trans không được thỏa nên ta cần cân nhắc kỹ khi sử dụng mô hình này để dự báo hoặc đưa ra suy luận. Đồng thời, ta cũng có thể thử áp dụng một mô hình hoặc phương pháp khác phù hợp hơn cho bộ dữ liệu support2.csv.
+
+### Tài liệu tham khảo
+
+[2] [https://hbiostat.org/data/repo/s](https://hbiostat.org/data/repo/supportdesc){.uri}[upportdesc](https://hbiostat.org/data/repo/supportdesc,)
