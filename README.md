@@ -14,15 +14,15 @@ Predictor variables derived from existing prognostic models (*aps, sps, surv2m, 
 
 The dataset contains 27 variables with missing values, which were handled as follows:
 
--   Variables with approximately 50% missing values (*glucose, bun, urine, adlp*) were excluded.
+- Variables with approximately 50% missing values (*glucose, bun, urine, adlp*) were excluded.
 
--   Variables with minimal missingness (*meanbp, hrt, resp, temp, sod*) were assumed Missing Completely At Random (MCAR) and imputed using mean imputation.
+- Variables with minimal missingness (*meanbp, hrt, resp, temp, sod*) were assumed Missing Completely At Random (MCAR) and imputed using mean imputation.
 
--   Selected laboratory variables (*alb, pafi, bili, crea, wblc*) were imputed with clinically reasonable reference values.
+- Selected laboratory variables (*alb, pafi, bili, crea, wblc*) were imputed with clinically reasonable reference values.
 
--   Categorical MCAR variables (*race, dnr)* were imputed using mode imputation; Numeric MCAR variable *dnrday* was imputed using mean imputation.
+- Categorical MCAR variables (*race, dnr)* were imputed using mode imputation; Numeric MCAR variable *dnrday* was imputed using mean imputation.
 
--   Remaining variables with Missing At Random (MAR) patterns were imputed using Multiple Imputation by Chained Equations (MICE) with the Classification And Regression Trees (CART) method.
+- Remaining variables with Missing At Random (MAR) patterns were imputed using Multiple Imputation by Chained Equations (MICE) with the Classification And Regression Trees (CART) method.
 
 Outliers were examined but retained, as extreme values may reflect valid clinical conditions. The completed dataset was split into training (80%) and validation (20%) sets.
 
